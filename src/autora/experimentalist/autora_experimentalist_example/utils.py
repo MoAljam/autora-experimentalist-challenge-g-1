@@ -1,4 +1,5 @@
 from scipy.special import rel_entr
+from statistics import mean
 def divergence_scorer(conditions: Union[pd.DataFrame, np.ndarray],
                              models: List,
                              num_samples: Optional[int] = None,
