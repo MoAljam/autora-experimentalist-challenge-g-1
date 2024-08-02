@@ -17,7 +17,9 @@ dependencies = [
     "autora[all-experimentalists]",
     "matplotlib",
     "dataclasses",
-    "typing"
+    "typing",
+    autora["experimentalist-sampler-mixture"],
+    statistics
 ]
 
 [project.optional-dependencies]
