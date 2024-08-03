@@ -12,3 +12,4 @@ def divergence_scorer(conditions: Union[pd.DataFrame, np.ndarray],
     print("score:", score)
 
     return score
+

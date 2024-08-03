@@ -67,5 +67,5 @@ docs/reference/
 # Jupyter Notebook load data
 .ipynb_checkpoints
 
-#Challenge folder for notebook
-challenge
+# Challenge folder for notebook
+# challenge/
