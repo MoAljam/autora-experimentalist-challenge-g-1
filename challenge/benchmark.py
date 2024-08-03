@@ -1,6 +1,6 @@
 import logging
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 from autora.experimentalist.progressive import progressive_sample
 from autora.experimentalist.confirmation import confirmation_sample
@@ -35,7 +35,7 @@ from autora.experiment_runner.synthetic.psychophysics.weber_fechner_law import w
 from autora.experimentalist.grid import grid_pool
 from autora.experimentalist.random import random_pool, random_sample
 from autora.experimentalist.falsification import falsification_sample, falsification_score_sample
-from autora.experimentalist.model_disagreement import model_disagreement_sample
+from autora.experimentalist.model_disagreement import model_disagreement_sample, model_disagreement_score_sample
 from autora.experimentalist.uncertainty import uncertainty_sample
 from autora.experimentalist.novelty import novelty_sample, novelty_score_sample
 from autora.experimentalist.mixture import mixture_sample
@@ -88,29 +88,29 @@ def custom_sample_on_state(
     #       while the performance is based on 3 models
     samplers = [
         {
-            "func": novelty_sample,
+            "func": novelty_score_sample,
             "name": "novelty",
             "params": {"reference_conditions": reference_conditions},
         },
-        # {
-        #     "func": falsification_sample,
-        #     "name": "falsification",
-        #     "params": {
-        #         "reference_conditions": reference_conditions,
-        #         "reference_observations": reference_observations,
-        #         "metadata": meta_data,
-        #         "model": models_polyr[-1],
-        #     },
-        # },
         {
-            "func": model_disagreement_sample,
+            "func": falsification_score_sample,
+            "name": "falsification",
+            "params": {
+                "reference_conditions": reference_conditions,
+                "reference_observations": reference_observations,
+                "metadata": meta_data,
+                "model": models_polyr[-1],
+            },
+        },
+        {
+            "func": model_disagreement_score_sample,
             "name": "model_disagreement",
             "params": {
                 "models": [models_bms[-1], models_lr[-1], models_polyr[-1]],
             },
         },
         # {
-        #     "func": confirmation_sample,
+        #     "func": confirmation_score_sample,
         #     "name": "confirmation",
         #     "params": {
         #         "reference_conditions": reference_conditions,
