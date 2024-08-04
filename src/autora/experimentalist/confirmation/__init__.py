@@ -68,9 +68,7 @@ def pool(
     # format input
 
     if isinstance(reference_conditions, pd.DataFrame):
-        reference_conditions = align_dataframe_to_ivs(
-            reference_conditions, metadata.independent_variables
-        )
+        reference_conditions = align_dataframe_to_ivs(reference_conditions, metadata.independent_variables)
 
     reference_conditions_np = np.array(reference_conditions)
     if len(reference_conditions_np.shape) == 1:
@@ -85,9 +83,7 @@ def pool(
     if metadata.dependent_variables[0].type == ValueType.CLASS:
         # find all unique values in reference_observations
         num_classes = len(np.unique(reference_observations))
-        reference_observations = class_to_onehot(
-            reference_observations, n_classes=num_classes
-        )
+        reference_observations = class_to_onehot(reference_observations, n_classes=num_classes)
 
     reference_conditions_tensor = torch.from_numpy(reference_conditions_np).float()
 
@@ -146,9 +142,7 @@ def pool(
                     dist_to_max = np.max([dist_to_max, 0.00000001])
                     repulsion_from_min = limit_repulsion / (dist_to_min**2)
                     repulsion_from_max = limit_repulsion / (dist_to_max**2)
-                    iv_value_repulsed = (
-                        iv_value + repulsion_from_min - repulsion_from_max
-                    )
+                    iv_value_repulsed = iv_value + repulsion_from_min - repulsion_from_max
                     popper_input[idx] = iv_value_repulsed
 
                 # now add gradient for theory loss maximization
@@ -159,9 +153,7 @@ def pool(
                 for idx in range(len(input_sample)):
                     iv_raw_value = input_sample[idx]
                     iv_limits = iv_limit_list[idx]
-                    iv_clipped_value = np.min(
-                        [iv_raw_value, np.max(iv_limits) - limit_offset]
-                    )
+                    iv_clipped_value = np.min([iv_raw_value, np.max(iv_limits) - limit_offset])
                     iv_clipped_value = np.max(
                         [
                             iv_clipped_value,
@@ -177,9 +169,7 @@ def pool(
 
             # first clip value
             iv_clipped_value = np.min([iv_raw_value, np.max(iv_limits) - limit_offset])
-            iv_clipped_value = np.max(
-                [iv_clipped_value, np.min(iv_limits) + limit_offset]
-            )
+            iv_clipped_value = np.max([iv_clipped_value, np.min(iv_limits) + limit_offset])
             # make sure to convert variable to original scale
             iv_clipped_scaled_value = iv_clipped_value
 
@@ -255,7 +245,7 @@ def sample(
     if predicted_observations.ndim == 1:
         predicted_observations = predicted_observations.reshape(-1, 1)
 
-    new_conditions = confirmation_score_sample_from_predictions(
+    new_conditions, scores = confirmation_score_sample_from_predictions(
         conditions,
         predicted_observations,
         reference_conditions,
@@ -268,9 +258,7 @@ def sample(
     )
 
     if isinstance(condition_pool_copy, pd.DataFrame):
-        new_conditions = pd.DataFrame(
-            new_conditions, columns=condition_pool_copy.columns
-        )
+        new_conditions = pd.DataFrame(new_conditions, columns=condition_pool_copy.columns)
     else:
         new_conditions = pd.DataFrame(new_conditions)
 
@@ -340,9 +328,7 @@ def confirmation_score_sample(
     )
 
     if isinstance(condition_pool_copy, pd.DataFrame):
-        sorted_conditions = pd.DataFrame(
-            new_conditions, columns=condition_pool_copy.columns
-        )
+        sorted_conditions = pd.DataFrame(new_conditions, columns=condition_pool_copy.columns)
     else:
         sorted_conditions = pd.DataFrame(new_conditions)
 
@@ -411,9 +397,7 @@ def confirmation_score_sample_from_predictions(
         if metadata.dependent_variables[0].type == ValueType.CLASS:
             # find all unique values in reference_observations
             num_classes = len(np.unique(reference_observations))
-            reference_observations = class_to_onehot(
-                reference_observations, n_classes=num_classes
-            )
+            reference_observations = class_to_onehot(reference_observations, n_classes=num_classes)
 
     # create list of IV limits
     iv_limit_list = get_iv_limits(reference_conditions, metadata)
@@ -440,7 +424,7 @@ def confirmation_score_sample_from_predictions(
     sorted_score = score[np.argsort(score)[::-1]]
     a, b = sorted_conditions[0:num_samples], sorted_score[0:num_samples]
     # reverse order of rows in a, b
-    a , b = a[::-1], b[::-1]
+    a, b = a[::-1], b[::-1]
     return sorted_conditions[0:num_samples], sorted_score[0:num_samples]
 
 
@@ -451,9 +435,7 @@ confirmation_pooler = deprecated_alias(confirmation_pool, "confirmation_pooler")
 confirmation_sample = sample
 confirmation_pool.__doc__ = """Alias for sample"""
 confirmation_sampler = deprecated_alias(confirmation_sample, "confirmation_sampler")
-confirmation_score_sampler = deprecated_alias(
-    confirmation_score_sample, "confirmation_score_sampler"
-)
+confirmation_score_sampler = deprecated_alias(confirmation_score_sample, "confirmation_score_sampler")
 confirmation_score_sampler_from_predictions = deprecated_alias(
     confirmation_score_sample_from_predictions,
     "confirmation_score_sampler_from_predictions",
