@@ -1,10 +1,14 @@
+from concurrent.futures import ThreadPoolExecutor
 import logging
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.ERROR)
 
 from autora.experimentalist.progressive import progressive_sample
-from autora.experimentalist.confirmation import confirmation_sample
+from autora.experimentalist.progressive_multi import progressive_multi_sample
+from autora.experimentalist.adaptable import adaptable_sample
+from autora.experimentalist.confirmation import confirmation_sample, confirmation_score_sample
 from tqdm import tqdm
+
 
 from utils import (
     CustomState,
@@ -93,6 +97,11 @@ def custom_sample_on_state(
             "params": {"reference_conditions": reference_conditions},
         },
         {
+            "func": random_sample,
+            "name": "random",
+            "params": {},
+        },
+        {
             "func": falsification_score_sample,
             "name": "falsification",
             "params": {
@@ -109,28 +118,39 @@ def custom_sample_on_state(
                 "models": [models_bms[-1], models_lr[-1], models_polyr[-1]],
             },
         },
-        # {
-        #     "func": confirmation_score_sample,
-        #     "name": "confirmation",
-        #     "params": {
-        #         "reference_conditions": reference_conditions,
-        #         "reference_observations": reference_observations,
-        #         "metadata": meta_data,
-        #         "model": models_polyr[-1],
-        #     },
-        # },
+        {
+            "func": confirmation_score_sample,
+            "name": "confirmation",
+            "params": {
+                "reference_conditions": reference_conditions,
+                "reference_observations": reference_observations,
+                "metadata": meta_data,
+                "model": models_polyr[-1],
+            },
+        },
     ]
-    # samplers_coords = [0, 3, 4, 7]  # optional
+    samplers_coords = [0, 1, 3, 4, 6]  # optional
 
-    conditions = progressive_sample(
+    new_conditions = adaptable_sample(
         conditions=all_conditions,
-        num_samples=num_samples,
-        # models=[models_lr[-1], models_polyr[-1]],
-        temprature=temperature,
+        models=models_polyr,
         samplers=samplers,
-        # samplers_coords=samplers_coords,
+        num_samples=num_samples,
+        samplers_coords=samplers_coords,
+        sensitivity=10,
+        plot=True,
     )
-    return Delta(conditions=conditions)
+
+    # new_conditions = progressive_sample(
+    #     conditions=all_conditions,
+    #     num_samples=num_samples,
+    #     # models=[models_lr[-1], models_polyr[-1]],
+    #     temprature=temperature,
+    #     samplers=samplers,
+    #     # samplers_coords=samplers_coords,
+    # )
+
+    return Delta(conditions=new_conditions)
 
 
 # region run simulation
@@ -142,15 +162,28 @@ def run_simulation(num_cycles, num_conditions_per_cycle, num_initial_conditions,
     # design space. We will store this validation set in a separate validation states
 
     # create AutoRA state for validation purposes
-    validation_conditions = CustomState(variables=experiment_runner.variables)
-    validation_experiment_data = CustomState(variables=experiment_runner.variables)
+    # validation_conditions = CustomState(variables=experiment_runner.variables)
+    # validation_experiment_data = CustomState(variables=experiment_runner.variables)
 
-    # our validation set will be consist of a grid of experiment conditons
-    # across the entire experimental design domain
-    validation_conditions = grid_pool_on_state(validation_conditions)
-    validation_experiment_data = grid_pool_on_state(validation_experiment_data)
+    # # our validation set will be consist of a grid of experiment conditons
+    # # across the entire experimental design domain
+    # validation_conditions = grid_pool_on_state(validation_conditions)
+    # validation_experiment_data = grid_pool_on_state(validation_experiment_data)
+    # validation_experiment_data = run_experiment_on_state(
+    #     validation_experiment_data, experiment_runner=experiment_runner
+    # )
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        validation_conditions_future = executor.submit(
+            grid_pool_on_state, CustomState(variables=experiment_runner.variables)
+        )
+        validation_experiment_data_future = executor.submit(
+            grid_pool_on_state, CustomState(variables=experiment_runner.variables)
+        )
+
+    validation_conditions = validation_conditions_future.result()
     validation_experiment_data = run_experiment_on_state(
-        validation_experiment_data, experiment_runner=experiment_runner
+        validation_experiment_data_future.result(), experiment_runner=experiment_runner
     )
 
     benchmark_MSE_log = list()
@@ -181,35 +214,80 @@ def run_simulation(num_cycles, num_conditions_per_cycle, num_initial_conditions,
         # print("SIMULATION " + str(sim) + " / DISCOVERY CYCLE " + str(cycle))
 
         # first, we fit a model to the data
-        print("Fitting models on benchmark state...")
-        benchmark_state = theorists_on_state(benchmark_state, bms_epochs=bms_epochs)
-        print("Fitting models on working state...")
-        working_state = theorists_on_state(working_state, bms_epochs=bms_epochs)
+        # print("Fitting models on benchmark state...")
+        # benchmark_state = theorists_on_state(benchmark_state, bms_epochs=bms_epochs)
+        # print("Fitting models on working state...")
+        # working_state = theorists_on_state(working_state, bms_epochs=bms_epochs)
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            benchmark_future = executor.submit(theorists_on_state, benchmark_state, bms_epochs=bms_epochs)
+            working_future = executor.submit(theorists_on_state, working_state, bms_epochs=bms_epochs)
+
+        benchmark_state = benchmark_future.result()
+        working_state = working_future.result()
 
         # now we can determine how well the models do on the validation set
-        benchmark_MSE = get_validation_MSE(validation_experiment_data, benchmark_state)
-        benchmark_MSE_log.append(benchmark_MSE)
+        # benchmark_MSE = get_validation_MSE(validation_experiment_data, benchmark_state)
+        # benchmark_MSE_log.append(benchmark_MSE)
 
-        working_MSE = get_validation_MSE(validation_experiment_data, working_state)
-        working_MSE_log.append(working_MSE)
+        # working_MSE = get_validation_MSE(validation_experiment_data, working_state)
+        # working_MSE_log.append(working_MSE)
+
+        # MSE calculation in parallel
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            benchmark_MSE_future = executor.submit(get_validation_MSE, validation_experiment_data, benchmark_state)
+            working_MSE_future = executor.submit(get_validation_MSE, validation_experiment_data, working_state)
+
+        benchmark_MSE_log.append(benchmark_MSE_future.result())
+        working_MSE_log.append(working_MSE_future.result())
 
         # then we determine the next experiment condition
-        print("Sampling new experiment conditions...")
-        benchmark_state = random_sample_on_state(
-            benchmark_state, all_conditions=validation_conditions.conditions, num_samples=num_conditions_per_cycle
-        )
-        working_state = custom_sample_on_state(
-            working_state,
-            all_conditions=validation_conditions.conditions,
-            num_samples=num_conditions_per_cycle,
-            cycle=cycle,
-            max_cycle=num_cycles,
-        )
+        # print("Sampling new experiment conditions...")
+        # benchmark_state = random_sample_on_state(
+        #     benchmark_state, all_conditions=validation_conditions.conditions, num_samples=num_conditions_per_cycle
+        # )
+        # working_state = custom_sample_on_state(
+        #     working_state,
+        #     all_conditions=validation_conditions.conditions,
+        #     num_samples=num_conditions_per_cycle,
+        #     cycle=cycle,
+        #     max_cycle=num_cycles,
+        # )
 
-        print("Obtaining observations...")
-        # we obtain the corresponding experiment data
-        benchmark_state = run_experiment_on_state(benchmark_state, experiment_runner=experiment_runner)
-        working_state = run_experiment_on_state(working_state, experiment_runner=experiment_runner)
+        # print("Obtaining observations...")
+        # # we obtain the corresponding experiment data
+        # benchmark_state = run_experiment_on_state(benchmark_state, experiment_runner=experiment_runner)
+        # working_state = run_experiment_on_state(working_state, experiment_runner=experiment_runner)
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            benchmark_sample_future = executor.submit(
+                random_sample_on_state,
+                benchmark_state,
+                all_conditions=validation_conditions.conditions,
+                num_samples=num_conditions_per_cycle,
+            )
+            working_sample_future = executor.submit(
+                custom_sample_on_state,
+                working_state,
+                all_conditions=validation_conditions.conditions,
+                num_samples=num_conditions_per_cycle,
+                cycle=cycle,
+                max_cycle=num_cycles,
+            )
+
+        benchmark_state = benchmark_sample_future.result()
+        working_state = working_sample_future.result()
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            benchmark_experiment_future = executor.submit(
+                run_experiment_on_state, benchmark_state, experiment_runner=experiment_runner
+            )
+            working_experiment_future = executor.submit(
+                run_experiment_on_state, working_state, experiment_runner=experiment_runner
+            )
+
+        benchmark_state = benchmark_experiment_future.result()
+        working_state = working_experiment_future.result()
 
     return benchmark_MSE_log, working_MSE_log, benchmark_state, working_state
 
@@ -230,13 +308,13 @@ if __name__ == "__main__":
 
     experiment_runners = [
         # psychology
-        luce_choice_ratio(),
-        exp_learning(),
+        # luce_choice_ratio(),
+        # exp_learning(),
         # economics
-        expected_value_theory(),
+        # expected_value_theory(),
         prospect_theory(),
         # neuroscience
-        task_switching(),
+        # task_switching(),
         # psychophysics
         weber_fechner_law(),
     ]
@@ -260,6 +338,7 @@ if __name__ == "__main__":
         print("## Finished simulation for " + experiment_runner.name)
         print("## -----------------------------------------")
 
+    # exit()
     for experiment_runner in tqdm(experiment_runners, leave=True, desc="experiment runners"):
         print("## Running simulation for " + experiment_runner.name)
         num_cycle_to_run = num_cycles
@@ -287,14 +366,3 @@ if __name__ == "__main__":
 
         print("## Finished simulation for " + experiment_runner.name)
         print("## -----------------------------------------")
-
-    exit()
-    # we can also investigate the final state more closely
-    # for example, these are all the experimental data collected
-    # under random sampling:
-    print("# collected experiment data from last experiment")
-    print("## random sampling experimentalist")
-    print(benchmark_state.experiment_data)
-    # and for your custom experimentalist
-    print("## custom experimentalist")
-    print(working_state.experiment_data)
