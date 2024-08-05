@@ -87,6 +87,17 @@ def custom_sample_on_state(
     reference_conditions = experiment_data[ivs]
     reference_observations = experiment_data[dvs]
 
+    # remove the conditions that have already been sampled from the conditions pool
+    # remove reference conditions from the conditions pool
+    print("## all_conditions shape: ", all_conditions.shape)
+    print("## reference_conditions shape: ", reference_conditions.shape)
+    if isinstance(all_conditions, pd.DataFrame) and isinstance(reference_conditions, pd.DataFrame):
+        conditions_pool = pd.concat([all_conditions, reference_conditions])
+        conditions_pool = conditions_pool.drop_duplicates(keep=False)
+    else:
+        conditions_pool = all_conditions[~all_conditions.isin(reference_conditions)].dropna()
+    print("## conditions_pool shape: ", conditions_pool.shape)
+
     # NOTE: the sampler is performeing a bit worse when including falsification and confirmation
     #       possiblly due to passing only one model to theses samplers
     #       while the performance is based on 3 models
@@ -96,11 +107,11 @@ def custom_sample_on_state(
             "name": "novelty",
             "params": {"reference_conditions": reference_conditions},
         },
-        {
-            "func": random_sample,
-            "name": "random",
-            "params": {},
-        },
+        # {
+        #     "func": random_sample,
+        #     "name": "random",
+        #     "params": {},
+        # },
         {
             "func": falsification_score_sample,
             "name": "falsification",
@@ -129,15 +140,20 @@ def custom_sample_on_state(
             },
         },
     ]
-    samplers_coords = [0, 1, 3, 4, 6]  # optional
+    # samplers_coords = [0, 1, 3, 4, 6]  # optional
+    # samplers_coords = [1, 2, 5]
+    samplers_coords = [0, 2, 3, 5]
+
+    adaptable_sampler_sensitivity = 12
 
     new_conditions = adaptable_sample(
-        conditions=all_conditions,
-        models=models_polyr,
+        conditions=conditions_pool,
+        reference_conditions=reference_conditions,
+        models=models_polyr,  # pass only the polyr models
         samplers=samplers,
         num_samples=num_samples,
         samplers_coords=samplers_coords,
-        sensitivity=10,
+        sensitivity=adaptable_sampler_sensitivity,
         plot=True,
     )
 
@@ -209,9 +225,9 @@ def run_simulation(num_cycles, num_conditions_per_cycle, num_initial_conditions,
     working_state = CustomState(**initial_state.__dict__)
 
     # for each discovery cycle
-    for cycle in tqdm(range(num_cycles), leave=False, desc="discovery cycles"):
+    for cycle in tqdm(range(num_cycles), leave=True, desc="discovery cycles"):
 
-        # print("SIMULATION " + str(sim) + " / DISCOVERY CYCLE " + str(cycle))
+        print("SIMULATION " + str(sim) + " / DISCOVERY CYCLE " + str(cycle))
 
         # first, we fit a model to the data
         # print("Fitting models on benchmark state...")
@@ -308,18 +324,20 @@ if __name__ == "__main__":
 
     experiment_runners = [
         # psychology
-        # luce_choice_ratio(),
+        luce_choice_ratio(),
         # exp_learning(),
         # economics
-        # expected_value_theory(),
-        prospect_theory(),
+        expected_value_theory(),
+        # prospect_theory(),
         # neuroscience
         # task_switching(),
         # psychophysics
-        weber_fechner_law(),
+        # weber_fechner_law(),
     ]
 
-    for experiment_runner in tqdm(experiment_runners, leave=True, desc="experiment runners"):
+    for experiment_runner in tqdm(
+        experiment_runners, total=len(experiment_runners), leave=True, desc="experiment runners single"
+    ):
         print("## Running simulation for " + experiment_runner.name)
         num_cycle_to_run = num_cycles
         if experiment_runner.name == weber_fechner_law().name:
@@ -339,7 +357,9 @@ if __name__ == "__main__":
         print("## -----------------------------------------")
 
     # exit()
-    for experiment_runner in tqdm(experiment_runners, leave=True, desc="experiment runners"):
+    for experiment_runner in tqdm(
+        experiment_runners, total=len(experiment_runners), leave=True, desc="experiment runners average"
+    ):
         print("## Running simulation for " + experiment_runner.name)
         num_cycle_to_run = num_cycles
         if experiment_runner.name == weber_fechner_law().name:
@@ -348,7 +368,9 @@ if __name__ == "__main__":
         benchmark_MSE_plot_data = np.zeros([num_discovery_simulations, num_cycle_to_run])
         working_MSE_plot_data = np.zeros([num_discovery_simulations, num_cycle_to_run])
 
-        for sim in tqdm(range(num_discovery_simulations), leave=False, desc="discovery simulations"):
+        for sim in tqdm(
+            range(num_discovery_simulations), total=num_discovery_simulations, leave=True, desc="discovery simulations"
+        ):
             benchmark_MSE_log, working_MSE_log, benchmark_state, working_state = run_simulation(
                 num_cycle_to_run, num_conditions_per_cycle, num_initial_conditions, bms_epochs, experiment_runner, sim
             )

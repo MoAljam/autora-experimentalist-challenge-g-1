@@ -422,9 +422,8 @@ def confirmation_score_sample_from_predictions(
     # order rows in Y from highest to lowest
     sorted_conditions = conditions[np.argsort(score)[::-1]]
     sorted_score = score[np.argsort(score)[::-1]]
-    a, b = sorted_conditions[0:num_samples], sorted_score[0:num_samples]
-    # reverse order of rows in a, b
-    a, b = a[::-1], b[::-1]
+    # reverse order of rows in sorted conditions and sorted score
+    sorted_conditions, score = sorted_conditions[::-1], sorted_score[::-1]
     return sorted_conditions[0:num_samples], sorted_score[0:num_samples]
 
 

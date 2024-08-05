@@ -206,6 +206,7 @@ def get_sampler_index_gaussian(
 
 def score_sample(
     conditions: Union[pd.DataFrame, np.ndarray],
+    reference_conditions: Union[pd.DataFrame, np.ndarray],
     models: list,
     samplers: list,
     samplers_coords: list = None,
@@ -246,6 +247,11 @@ def score_sample(
     samplers_coords = np.asarray(samplers_coords)
 
     condition_pool_copy = pd.DataFrame(conditions)
+    reference_conditions = pd.DataFrame(reference_conditions)
+
+    # combine the conditions and reference_conditions such that the raws don't repeat
+    condition_pool_copy = pd.concat([condition_pool_copy, reference_conditions], ignore_index=True)
+    condition_pool_copy = condition_pool_copy.drop_duplicates(keep="first")
 
     # calculate the current meta score (surprisal score)
     if meta_score_func is None:
@@ -262,9 +268,9 @@ def score_sample(
     # make sure current_temperature is a scalar
     if not np.isscalar(current_temperature) or np.isnan(current_temperature):
         current_temperature = 0
-    if np.isinf(current_temperature):
+    elif np.isinf(current_temperature):
         current_temperature = 1
-    if current_temperature < 0:
+    elif current_temperature < 0:
         raise ValueError("current_temperature should be a positive scalar")
 
     _module_logger.info(f"## adaptable.sample: adjusted current temprature: {np.round(current_temperature, 6)}")
@@ -294,7 +300,7 @@ def score_sample(
         plt.legend()
         plt.suptitle("Gaussian distribution around the current progress")
         plt.title(
-            f"current tempreture: {np.round(_current_progress, 6)}, current meta score: {np.round(current_meta_score, 6)} \nstd: {std}"
+            f"current tempreture: {np.round(current_temperature, 6)}, current meta score: {np.round(current_meta_score, 6)} \nmu:{_current_progress}, std: {std}"
         )
         plt.xlabel("samplers-space")
         plt.ylabel("density")
@@ -334,11 +340,14 @@ def score_sample(
         else:
             raise ValueError("new conditions")
 
-    return new_conditions
+    new_conditions = new_conditions.sort_values(by="score", ascending=False)
+
+    return new_conditions[:num_samples]
 
 
 def sample(
     conditions: Union[pd.DataFrame, np.ndarray],
+    reference_conditions: Union[pd.DataFrame, np.ndarray],
     models: list,
     samplers: list,
     samplers_coords: list = None,
@@ -369,9 +378,11 @@ def sample(
     """
 
     condition_pool_copy = conditions.copy()
+    reference_conditions = reference_conditions.copy()
 
     new_conditions = adaptable_score_sample(
         conditions=conditions,
+        reference_conditions=reference_conditions,
         models=models,
         samplers=samplers,
         samplers_coords=samplers_coords,
@@ -385,7 +396,7 @@ def sample(
     if isinstance(condition_pool_copy, pd.DataFrame):
         new_conditions = pd.DataFrame(new_conditions, columns=condition_pool_copy.columns)
 
-    return new_conditions
+    return new_conditions[:num_samples]
 
 
 adaptable_sample = sample
