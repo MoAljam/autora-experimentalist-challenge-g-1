@@ -55,6 +55,10 @@ coverage.xml
 .pytest_cache/
 cover/
 
+logs/
+
+*.prof
+
 # mypy
 .mypy_cache/
 .dmypy.json
