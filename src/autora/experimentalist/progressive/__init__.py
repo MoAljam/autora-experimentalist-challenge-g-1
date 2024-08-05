@@ -6,6 +6,9 @@ from autora.utils.deprecation import deprecated_alias
 
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+import os
+from scipy.stats import norm
 
 from typing import Union, List
 from logging import getLogger
@@ -33,6 +36,7 @@ def score_sample(
     samplers_coords: list = None,
     num_samples: int = None,
     temprature: float = 0.5,
+    plot: bool = False,
 ) -> pd.DataFrame:
     """
     Sample from a list of samplers based on the progress / assumed confidence of model in the sampling process.
@@ -78,6 +82,28 @@ def score_sample(
     # index of the nearest sampler to a gaussian around the current progress
     index_closest_sampler = get_sampler_index_gaussian(samplers_coords, temprature, std)
 
+    if plot:
+        # plot the gaussian distribution around the current progress
+        _current_progress = temprature * (np.max(samplers_coords) - np.min(samplers_coords)) + np.min(samplers_coords)
+        _x = np.linspace(np.min(samplers_coords), np.max(samplers_coords), 100)
+        _y = norm.pdf(_x, loc=_current_progress, scale=std)
+        plt.figure(figsize=(10, 5))
+        plt.plot(_x, _y, label="gaussian distribution around the current progress")
+        plt.axvline(x=_current_progress, color="r", linestyle="--", label="current progress")
+        plt.axvline(x=samplers_coords[index_closest_sampler], color="g", linestyle="--", label="closest sampler")
+        plt.xticks(samplers_coords, [sampler["name"] for sampler in samplers], rotation=45)
+        plt.legend()
+        plt.suptitle("Gaussian distribution around the current progress")
+        plt.title(
+            f"current tempreture: {np.round(temprature, 6)}, current meta score: {np.round(temprature, 6)} \nmu:{_current_progress}, std: {std}"
+        )
+        plt.xlabel("samplers-space")
+        plt.ylabel("density")
+        os.makedirs("plots", exist_ok=True)
+        plt.tight_layout()
+        plt.savefig("./plots/adaptable_samplers_space.png")
+        plt.clf()
+
     _logger.debug(f"## progressive.sample: index closest sampler: {index_closest_sampler}")
 
     # get the sampler and its parameters
@@ -117,6 +143,7 @@ def sample(
     samplers_coords: list = None,
     num_samples: int = 1,
     temprature: float = 0.5,
+    plot: bool = False,
 ) -> pd.DataFrame:
     """
     Sample from a list of samplers based on the progress / assumed confidence of model in the sampling process.
@@ -144,6 +171,7 @@ def sample(
         samplers_coords=samplers_coords,
         num_samples=num_samples,
         temprature=temprature,
+        plot=plot,
     )
     new_conditions.drop("score", axis=1, inplace=True)
 
