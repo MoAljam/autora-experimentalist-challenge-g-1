@@ -1,8 +1,8 @@
 [project]
 # UPDATE THIS BEFORE PUBLISHING
-name = "autora_adaptable_experimentalist"
+name = "autora-adaptable-experimentalist"
 description = "adaptable experimentalist for autora"
-authors = [{ name = "FirstName LastName", email = "your@email.de" }]
+authors = []
 dynamic = ["version"]
 
 readme = "README.md"
@@ -28,12 +28,12 @@ dev = [
 
 test = [
     "pytest",
+    "hypothesis"
 ]
 
 [project.urls]
-homepage = "http://www.empiricalresearch.ai"
 repository = "https://github.com/MoAljam/autora-experimentalist-challenge-g-1"
-documentation = "https://MoAljam.github.io/autora-experimentalist-challenge-g-1"
+documentation = "https://MoAljam.github.io/autora-experimentalist-challenge-g-1/"
 
 
 [build-system]
