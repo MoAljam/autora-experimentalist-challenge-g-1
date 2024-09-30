@@ -33,7 +33,7 @@ test = [
 [project.urls]
 homepage = "http://www.empiricalresearch.ai"
 repository = "https://github.com/MoAljam/autora-theorist-g-1"
-documentation = "https://autoresearch.github.io/autora/"
+documentation = "https://MoAljam.github.io/autora-theorist-g-1/"
 
 
 [build-system]
