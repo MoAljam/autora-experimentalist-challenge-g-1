@@ -28,8 +28,8 @@ dev = [
 
 [project.urls]
 homepage = "http://www.empiricalresearch.ai"
-repository = "https://github.com/musslick/autora-experimentalist-challenge"
-documentation = "https://autoresearch.github.io/autora/"
+repository = "https://github.com/MoAljam/autora-experimentalist-challenge-g-1"
+documentation = "https://MoAljam.github.io/autora-experimentalist-challenge-g-1/"
 
 
 [build-system]
