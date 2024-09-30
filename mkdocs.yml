@@ -2,7 +2,7 @@
 INHERIT: mkdocs/base.yml  # use the shared AutoRA configuration by default
 
 site_name: AutoRA adaptable experimentalist 
-repo_url: 'https://github.com/MoAljam/autora-theorist-g-1'
+repo_url: 'https://github.com/MoAljam/autora-experimentalist-challenge-g-1'
 
 nav:
 - Home: 'index.md'

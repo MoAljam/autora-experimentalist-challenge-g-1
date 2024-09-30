@@ -32,8 +32,8 @@ test = [
 
 [project.urls]
 homepage = "http://www.empiricalresearch.ai"
-repository = "https://github.com/MoAljam/autora-theorist-g-1"
-documentation = "https://MoAljam.github.io/autora-theorist-g-1/"
+repository = "https://github.com/MoAljam/autora-experimentalist-challenge-g-1"
+documentation = "https://MoAljam.github.io/autora-experimentalist-challenge-g-1"
 
 
 [build-system]
