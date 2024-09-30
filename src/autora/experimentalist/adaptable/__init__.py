@@ -170,6 +170,22 @@ def polynomial_bias(x, power=0.5):
 def get_sampler_index_gaussian(
     samplers_coords: np.ndarray, mu: Union[float, np.ndarray], std: Union[float, np.ndarray] = 1
 ):
+    """
+    Examples:
+        >>> np.random.seed(42)
+        >>> samplers_coords = np.array([1, 2, 5])
+        >>> mu = 1.75
+        >>> std = 0.1
+        >>> get_sampler_index_gaussian(samplers_coords, mu, std)
+        2
+
+        >>> samplers_coords = np.array([0, 1, 3, 4, 6])
+        >>> mu = np.array([1.75, 2.5])
+        >>> std = 0.1
+        >>> get_sampler_index_gaussian(samplers_coords, mu, std)
+        4
+    """
+
     min_position = np.min(samplers_coords)
     max_position = np.max(samplers_coords)
 
