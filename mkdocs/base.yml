@@ -6,10 +6,10 @@ theme:
 
 plugins:
   - search
-  mkdocs-jupyter:  # required to convert Jupyter notebooks
-    include_source: true
-    execute: false
-    ignore_h1_titles: true
+  - mkdocs-jupyter:  # required to convert Jupyter notebooks
+      include_source: true
+      execute: false
+      ignore_h1_titles: true
 
 markdown_extensions:
   admonition: {}
