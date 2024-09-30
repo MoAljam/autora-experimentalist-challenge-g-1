@@ -139,6 +139,15 @@ def meta_score_to_sampler_space():
 def get_sampler_index_gaussian(
     samplers_coords: np.ndarray, mu: Union[float, np.ndarray], std: Union[float, np.ndarray] = 1
 ):
+    """
+    Examples:
+        >>> np.random.seed(42)
+        >>> samplers_coords = np.array([1, 2, 5])
+        >>> mu = 1.9
+        >>> std = 0.001
+        >>> get_sampler_index_gaussian(samplers_coords, mu, std)
+        2
+    """
     min_position = np.min(samplers_coords)
     max_position = np.max(samplers_coords)
 
