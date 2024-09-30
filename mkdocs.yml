@@ -1,12 +1,12 @@
 # yaml-language-server: $schema=https://squidfunk.github.io/mkdocs-material/schema.json
 INHERIT: mkdocs/base.yml  # use the shared AutoRA configuration by default
 
-site_name: AutoRA autora-experimentalist-example
-repo_url: 'https://github.com/musslick/autora-experimentalist-challenge'
+site_name: AutoRA adaptable experimentalist 
+repo_url: 'https://github.com/MoAljam/autora-theorist-g-1'
 
 nav:
 - Home: 'index.md'
 - Quickstart: 'quickstart.md'
 - Examples:
   - Basic Usage: 'Basic Usage.ipynb'
-  - Additional Example: 'Additional Example.ipynb'
+  - Benchmar: 'Benchmark.ipynb'
