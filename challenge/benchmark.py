@@ -3,9 +3,9 @@ import logging
 
 logging.basicConfig(level=logging.ERROR)
 
+from autora.experimentalist.adaptable import adaptable_sample
 from autora.experimentalist.progressive import progressive_sample
 from autora.experimentalist.progressive_multi import progressive_multi_sample
-from autora.experimentalist.adaptable import adaptable_sample
 from autora.experimentalist.confirmation import confirmation_sample, confirmation_score_sample
 from tqdm import tqdm
 
@@ -71,6 +71,7 @@ def custom_sample_on_state(
     num_samples=1,
     random_state=None,
 ):
+
     # temperature(0-1) to determine the progress of the discovery process
     temperature = cycle / max_cycle
     temperature = np.clip(temperature, 0, 1)
@@ -154,7 +155,7 @@ def custom_sample_on_state(
         num_samples=num_samples,
         samplers_coords=samplers_coords,
         sensitivity=adaptable_sampler_sensitivity,
-        plot=True,
+        plot_info=False,
     )
 
     # new_conditions = progressive_sample(
@@ -164,6 +165,7 @@ def custom_sample_on_state(
     #     temprature=temperature,
     #     samplers=samplers,
     #     # samplers_coords=samplers_coords,
+    #    plot=false,
     # )
 
     return Delta(conditions=new_conditions)
@@ -325,14 +327,14 @@ if __name__ == "__main__":
     experiment_runners = [
         # psychology
         luce_choice_ratio(),
-        # exp_learning(),
+        exp_learning(),
         # economics
         expected_value_theory(),
-        # prospect_theory(),
+        prospect_theory(),
         # neuroscience
-        # task_switching(),
+        task_switching(),
         # psychophysics
-        # weber_fechner_law(),
+        weber_fechner_law(),
     ]
 
     for experiment_runner in tqdm(
